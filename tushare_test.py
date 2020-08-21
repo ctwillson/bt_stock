@@ -14,14 +14,17 @@ def get_stock_list(pro):
     stock_list = data['ts_code']
     #stock_list.to_csv('stock_list.csv')
     for ts_code in stock_list:
-        try:
-            df = pro.daily(ts_code=ts_code,start_date=start_date,end_date=end_date)
-            bt_df = preprocess(df,True)
-            bt_df.to_csv('./testdata/day/'+ts_code[0:6]+'.csv')
-            time.sleep(0.1)
-        except:
-            print(ts_code + "failed")
-            time.sleep(2)
+        while True:
+            try:
+                df = pro.daily(ts_code=ts_code,start_date=start_date,end_date=end_date)
+                bt_df = preprocess(df,True)
+                bt_df.to_csv('./testdata/day/'+ts_code[0:6]+'.csv')
+                time.sleep(0.1)
+            except:
+                print(ts_code + "failed")
+                time.sleep(2)
+                continue
+            break
 
 #转换tushare data 为 backtrader data
 def preprocess(df, pro=False):
