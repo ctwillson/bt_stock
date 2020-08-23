@@ -10,6 +10,9 @@ end_date=str(now_time)[0:4]+str(now_time)[5:7]+str(now_time)[8:10]
 
 def get_stock_list(pro):
     data = pro.stock_basic(exchange='', list_status='L', fields='ts_code,symbol,name,area,industry,list_date')
+    if  data.empty:
+        print('get stock list failed,return!')
+        return
     data.to_csv('./testdata/stocklist.csv')
     stock_list = data['ts_code']
     #stock_list.to_csv('stock_list.csv')
@@ -47,7 +50,8 @@ def preprocess(df, pro=False):
     return df
 if __name__ == '__main__':
     stock_list_file = 'huidingstock_list.csv'
-    ts_token = os.environ('TS_TOKEN')
+    ts_token = os.getenv('TS_TOKEN')
+    print('ts_token = ' + ts_token)
     ts.set_token(ts_token)
     pro = ts.pro_api()
     get_stock_list(pro)
