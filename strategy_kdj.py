@@ -5,36 +5,60 @@ import pandas as pd
 import os.path  # To manage paths
 import sys  # To find out the script name (in argv[0])
 import argparse
+
 from mylogs import mylog
 
-class MacdStrategy(bt.Strategy):
+class KDJ(bt.Indicator):
+    lines = ('K','D','J')
+
     params = (
-        ('fastperiod', 10),
-        ('slowperiod', 22),
-        ('signalperiod', 8),
+        ('period', 9),
+        ('period_dfast', 3),
+        ('period_dslow', 3),
+    )
+    
+    plotlines = dict(
+        J=dict(
+            _fill_gt=('K', ('red', 0.50)),
+            _fill_lt=('K', ('green', 0.50)),
+        )
+    )
+    
+    def __init__(self):
+        # Add a KDJ indicator
+        self.kd = bt.indicators.StochasticFull(
+            self.data,
+            period = self.p.period,
+            period_dfast = self.p.period_dfast,
+            period_dslow = self.p.period_dslow,
+        )
+        
+        self.l.K = self.kd.percD
+        self.l.D = self.kd.percDSlow
+        self.l.J = self.K*3 - self.D*2
+
+class KDJStrategy(bt.Strategy):
+    params = (
+        ('period', 9),
+        ('period_dfast', 3),
+        ('period_dslow', 3),
     )
     
         
     def __init__(self):
         
-        kwargs = {
-            'fastperiod': self.p.fastperiod,
-            'fastmatype': bt.talib.MA_Type.EMA,
-            'slowperiod': self.p.slowperiod,
-            'slowmatype': bt.talib.MA_Type.EMA,
-            'signalperiod': self.p.signalperiod,
-            'signalmatype': bt.talib.MA_Type.EMA,
-        }
-
-        # Add a Macd indicator
-        self.macd = bt.talib.MACDEXT(
-             self.data0.close, **kwargs)
+        # use self defind a KDJ indicator
+        self.kd = KDJ(
+            self.data0,
+            period = self.p.period,
+            period_dfast = self.p.period_dfast,
+            period_dslow = self.p.period_dslow,
+        )
     
-        self.crossover = bt.indicators.CrossOver(self.macd.macd, self.macd.macdsignal, plot=False)
-        self.above = bt.And(self.macd.macd>0.0, self.macd.macdsignal>0.0)
+        self.crossover = bt.indicators.CrossOver(self.kd.K, self.kd.D, plot=False)
+        #self.above = bt.And(self.macd.macd>0.0, self.macd.macdsignal>0.0)
         
-        self.buy_signal = bt.And(self.above, self.crossover==1)
-        #self.buy_signal = self.crossover==1
+        self.buy_signal = (self.crossover==1)
         self.sell_signal = (self.crossover==-1)
         # To keep track of pending orders
         self.order = None
@@ -81,88 +105,21 @@ def parse_args(pargs=None):
     parser.add_argument('--s', required=False, default='000001',
                         help='to test which stocks')
     return parser.parse_args(pargs)
-# if __name__ == '__main__':
 
-#     modpath = os.path.dirname(os.path.abspath(sys.argv[0]))
-#     datapath = os.path.join(modpath, 'testdata/bt_csv_from_toshare.csv')
-#     print (datapath)
-#     dataframe = pd.read_csv(datapath,index_col=0,parse_dates=True)
-#     cerebro = bt.Cerebro()
-#     dataframe['openinterest'] = 0
-#     data = bt.feeds.PandasData(dataname=dataframe)
-#     cerebro.adddata(data)
-
-#     cerebro.addstrategy(MacdStrategy)
-#     cerebro.broker.setcash(100000.0)
-#     cerebro.broker.setcommission(0.0005)
-#     cerebro.broker.set_coc(True)
-#     cerebro.addsizer(bt.sizers.AllInSizerInt, percents=99)
-#     cerebro.addanalyzer(bt.analyzers.SQN)
-
-#     cerebro.addwriter(bt.WriterFile, out = 'log.csv',csv=True)
-#     result = cerebro.run()
-#     print('Ending Portfolio Value: {:.2f}'.format(cerebro.broker.getvalue()))
-#     ana = result[0].analyzers.sqn.get_analysis()
-
-
-
-
-    # stocklist = pd.read_csv(datapath,index_col=0,parse_dates=True)
-    # for ts_code in stocklist['ts_code']:
-    #     print(ts_code[0:6])
-    #     mydatapath = os.path.join(modpath, 'testdata/day/'+ts_code[0:6]+'.csv')
-    #     if not os.path.exists(mydatapath) :
-    #         print(mydatapath + ' not exists,continue!!!')
-    #         continue
-    #     cerebro = bt.Cerebro()
-
-    #     dataframe = pd.read_csv(mydatapath,index_col=0,parse_dates=True)
-    #     if dataframe.empty:
-    #         continue
-    #     dataframe['openinterest'] = 0
-    #     data = bt.feeds.PandasData(dataname=dataframe)
-    #     cerebro.adddata(data)
-    #     cerebro.addstrategy(MacdStrategy)
-
-
-    #     # 小场面1万起始资金
-    #     cerebro.broker.setcash(100000.0)
-
-    #     # 手续费万5
-    #     cerebro.broker.setcommission(0.0005)
-
-    #     # 以发出信号当日收盘价成交
-    #     cerebro.broker.set_coc(True)
-
-    #     # Add a FixedSize sizer according to the stake
-    #     cerebro.addsizer(bt.sizers.AllInSizerInt, percents=99)
-
-    #     print('Starting Portfolio Value: {:.2f}'.format(cerebro.broker.getvalue()))
-
-    #     cerebro.addanalyzer(bt.analyzers.SQN)
-
-    #     result = cerebro.run()
-
-    #     print('Ending Portfolio Value: {:.2f}'.format(cerebro.broker.getvalue()))
-    #     ana = result[0].analyzers.sqn.get_analysis()
-    #     print("sqn: {:.3f}, trades:{:d}".format(ana['sqn'],ana['trades']))
-    #     cerebro.addwriter(bt.WriterFile, out = 'log.csv',csv=True)
-    #cerebro.plot(iplot=True)
 def runstrat(args=None):
     args = parse_args(args)
-
     logger = mylog.MyLog(__name__,__file__)
     logger.instance()
     modpath = os.path.dirname(os.path.abspath(sys.argv[0]))
     datapath = os.path.join(modpath, 'testdata/stocklist.csv')
-    stocklist = pd.read_csv(datapath,index_col=0,parse_dates=True)
     if args.all:
+        stocklist = pd.read_csv(datapath,index_col=0,parse_dates=True)
         profitValue = 0
         lossValue = 0
         for ts_code in stocklist['ts_code']:
             print(ts_code[0:6])
             mydatapath = os.path.join(modpath, 'testdata/day/'+ts_code[0:6]+'.csv')
-            if not os.path.exists(mydatapath) :
+            if not os.path.exists(mydatapath):
                 print(mydatapath + ' not exists,continue!!!')
                 continue
 
@@ -173,16 +130,16 @@ def runstrat(args=None):
             data = bt.feeds.PandasData(dataname=dataframe)
             cerebro = bt.Cerebro()
             cerebro.adddata(data,name = ts_code)
-            cerebro.addstrategy(MacdStrategy)
+            cerebro.addstrategy(KDJStrategy)
             cerebro.broker.setcash(100000.0)
             cerebro.broker.setcommission(0.0005)
             cerebro.broker.set_coc(True)
             cerebro.addsizer(bt.sizers.AllInSizerInt, percents=99)
             # cerebro.addanalyzer(bt.analyzers.SQN)
-            begincash = cerebro.broker.getvalue()
             print('Starting Portfolio Value: {:.2f}'.format(cerebro.broker.getvalue()))
+            begincash = cerebro.broker.getvalue()
             cerebro.run()
-            # cerebro.plot()
+            #cerebro.plot()
             print('Ending Portfolio Value: {:.2f}'.format(cerebro.broker.getvalue()))
             endcash = cerebro.broker.getvalue()
             if(begincash > endcash):
@@ -191,7 +148,8 @@ def runstrat(args=None):
             else:
                 profitValue = profitValue +1
                 logger.logerr(ts_code[0:6] + 'profit!')
-    
+        logger.logerr('profit:' + profitValue + ' loss:' + lossValue)
+
     else:
         if not args.s is None:
             datapath = os.path.join(modpath, 'testdata/day/',args.s+'.csv')
@@ -206,7 +164,7 @@ def runstrat(args=None):
         data = bt.feeds.PandasData(dataname=dataframe)
         cerebro = bt.Cerebro()
         cerebro.adddata(data)
-        cerebro.addstrategy(MacdStrategy)
+        cerebro.addstrategy(KDJStrategy)
         cerebro.broker.setcash(100000.0)
         cerebro.broker.setcommission(0.0005)
         cerebro.broker.set_coc(True)
@@ -217,8 +175,6 @@ def runstrat(args=None):
         cerebro.run()
         cerebro.plot()
         print('Ending Portfolio Value: {:.2f}'.format(cerebro.broker.getvalue()))
-
-
 
 if __name__ == '__main__':
     runstrat()
