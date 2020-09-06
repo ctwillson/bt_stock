@@ -191,7 +191,7 @@ def runstrat(args=None):
             else:
                 profitValue = profitValue +1
                 logger.logerr(ts_code[0:6] + 'profit!')
-    
+        logger.logerr('profit:' + profitValue + ' loss:' + lossValue)
     else:
         if not args.s is None:
             datapath = os.path.join(modpath, 'testdata/day/',args.s+'.csv')
