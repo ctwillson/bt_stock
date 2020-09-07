@@ -9,9 +9,9 @@ from mylogs import mylog
 
 class MacdStrategy(bt.Strategy):
     params = (
-        ('fastperiod', 10),
-        ('slowperiod', 22),
-        ('signalperiod', 8),
+        ('fastperiod', 12),
+        ('slowperiod', 26),
+        ('signalperiod', 9),
     )
     
         
@@ -153,6 +153,7 @@ def runstrat(args=None):
 
     logger = mylog.MyLog(__name__,__file__)
     logger.instance()
+    logger.logerr('start time' + datetime.datetime.now())
     modpath = os.path.dirname(os.path.abspath(sys.argv[0]))
     datapath = os.path.join(modpath, 'testdata/stocklist.csv')
     stocklist = pd.read_csv(datapath,index_col=0,parse_dates=True)
@@ -217,7 +218,7 @@ def runstrat(args=None):
         cerebro.run()
         cerebro.plot()
         print('Ending Portfolio Value: {:.2f}'.format(cerebro.broker.getvalue()))
-
+    logger.logerr('end time' + datetime.datetime.now())
 
 
 if __name__ == '__main__':
