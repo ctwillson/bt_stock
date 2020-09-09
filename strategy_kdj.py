@@ -110,7 +110,7 @@ def runstrat(args=None):
     args = parse_args(args)
     logger = mylog.MyLog(__name__,__file__)
     logger.instance()
-    logger.logerr('start time' + datetime.datetime.now())
+    start_time = str(datetime.datetime.now())
     modpath = os.path.dirname(os.path.abspath(sys.argv[0]))
     datapath = os.path.join(modpath, 'testdata/stocklist.csv')
     if args.all:
@@ -176,7 +176,7 @@ def runstrat(args=None):
         cerebro.run()
         cerebro.plot()
         print('Ending Portfolio Value: {:.2f}'.format(cerebro.broker.getvalue()))
-    logger.logerr('end time' + datetime.datetime.now())
+    print('start_time = ' + start_time + ' end time =' + str(datetime.datetime.now()))
 
 if __name__ == '__main__':
     runstrat()

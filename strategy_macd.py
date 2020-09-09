@@ -39,7 +39,8 @@ class MacdStrategy(bt.Strategy):
         # To keep track of pending orders
         self.order = None
         
-        
+    # def prenext(self):
+    #     print("prenext")
     def notify_order(self, order):
         if order.status in [order.Submitted, order.Accepted]:
             # Buy/Sell order submitted/accepted to/by broker - Nothing to do
@@ -50,6 +51,7 @@ class MacdStrategy(bt.Strategy):
             self.order = None
 
     def next(self):
+        # print('data len= ' + str(len(self.data0)))
         # Check if an order is pending ... if yes, we cannot send a 2nd one
         if self.order:
             return
@@ -81,79 +83,13 @@ def parse_args(pargs=None):
     parser.add_argument('--s', required=False, default='000001',
                         help='to test which stocks')
     return parser.parse_args(pargs)
-# if __name__ == '__main__':
 
-#     modpath = os.path.dirname(os.path.abspath(sys.argv[0]))
-#     datapath = os.path.join(modpath, 'testdata/bt_csv_from_toshare.csv')
-#     print (datapath)
-#     dataframe = pd.read_csv(datapath,index_col=0,parse_dates=True)
-#     cerebro = bt.Cerebro()
-#     dataframe['openinterest'] = 0
-#     data = bt.feeds.PandasData(dataname=dataframe)
-#     cerebro.adddata(data)
-
-#     cerebro.addstrategy(MacdStrategy)
-#     cerebro.broker.setcash(100000.0)
-#     cerebro.broker.setcommission(0.0005)
-#     cerebro.broker.set_coc(True)
-#     cerebro.addsizer(bt.sizers.AllInSizerInt, percents=99)
-#     cerebro.addanalyzer(bt.analyzers.SQN)
-
-#     cerebro.addwriter(bt.WriterFile, out = 'log.csv',csv=True)
-#     result = cerebro.run()
-#     print('Ending Portfolio Value: {:.2f}'.format(cerebro.broker.getvalue()))
-#     ana = result[0].analyzers.sqn.get_analysis()
-
-
-
-
-    # stocklist = pd.read_csv(datapath,index_col=0,parse_dates=True)
-    # for ts_code in stocklist['ts_code']:
-    #     print(ts_code[0:6])
-    #     mydatapath = os.path.join(modpath, 'testdata/day/'+ts_code[0:6]+'.csv')
-    #     if not os.path.exists(mydatapath) :
-    #         print(mydatapath + ' not exists,continue!!!')
-    #         continue
-    #     cerebro = bt.Cerebro()
-
-    #     dataframe = pd.read_csv(mydatapath,index_col=0,parse_dates=True)
-    #     if dataframe.empty:
-    #         continue
-    #     dataframe['openinterest'] = 0
-    #     data = bt.feeds.PandasData(dataname=dataframe)
-    #     cerebro.adddata(data)
-    #     cerebro.addstrategy(MacdStrategy)
-
-
-    #     # 小场面1万起始资金
-    #     cerebro.broker.setcash(100000.0)
-
-    #     # 手续费万5
-    #     cerebro.broker.setcommission(0.0005)
-
-    #     # 以发出信号当日收盘价成交
-    #     cerebro.broker.set_coc(True)
-
-    #     # Add a FixedSize sizer according to the stake
-    #     cerebro.addsizer(bt.sizers.AllInSizerInt, percents=99)
-
-    #     print('Starting Portfolio Value: {:.2f}'.format(cerebro.broker.getvalue()))
-
-    #     cerebro.addanalyzer(bt.analyzers.SQN)
-
-    #     result = cerebro.run()
-
-    #     print('Ending Portfolio Value: {:.2f}'.format(cerebro.broker.getvalue()))
-    #     ana = result[0].analyzers.sqn.get_analysis()
-    #     print("sqn: {:.3f}, trades:{:d}".format(ana['sqn'],ana['trades']))
-    #     cerebro.addwriter(bt.WriterFile, out = 'log.csv',csv=True)
-    #cerebro.plot(iplot=True)
 def runstrat(args=None):
     args = parse_args(args)
 
     logger = mylog.MyLog(__name__,__file__)
     logger.instance()
-    logger.logerr('start time' + datetime.datetime.now())
+    start_time = str(datetime.datetime.now())
     modpath = os.path.dirname(os.path.abspath(sys.argv[0]))
     datapath = os.path.join(modpath, 'testdata/stocklist.csv')
     stocklist = pd.read_csv(datapath,index_col=0,parse_dates=True)
@@ -218,7 +154,7 @@ def runstrat(args=None):
         cerebro.run()
         cerebro.plot()
         print('Ending Portfolio Value: {:.2f}'.format(cerebro.broker.getvalue()))
-    logger.logerr('end time' + datetime.datetime.now())
+    print('start_time = ' + start_time + ' end time =' + str(datetime.datetime.now()))
 
 
 if __name__ == '__main__':
