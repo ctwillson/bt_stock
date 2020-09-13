@@ -9,9 +9,9 @@ from mylogs import mylog
 
 class MacdStrategy(bt.Strategy):
     params = (
-        ('fastperiod', 12),
-        ('slowperiod', 26),
-        ('signalperiod', 9),
+        ('fastperiod', 10),
+        ('slowperiod', 24),
+        ('signalperiod', 8),
     )
     
         
@@ -29,12 +29,11 @@ class MacdStrategy(bt.Strategy):
         # Add a Macd indicator
         self.macd = bt.talib.MACDEXT(
              self.data0.close, **kwargs)
-    
         self.crossover = bt.indicators.CrossOver(self.macd.macd, self.macd.macdsignal, plot=False)
         self.above = bt.And(self.macd.macd>0.0, self.macd.macdsignal>0.0)
-        
-        self.buy_signal = bt.And(self.above, self.crossover==1)
-        #self.buy_signal = self.crossover==1
+
+        #self.buy_signal = bt.And(self.above, self.crossover==1)
+        self.buy_signal = self.crossover==1
         self.sell_signal = (self.crossover==-1)
         # To keep track of pending orders
         self.order = None
@@ -53,18 +52,22 @@ class MacdStrategy(bt.Strategy):
     def next(self):
         # print('data len= ' + str(len(self.data0)))
         # Check if an order is pending ... if yes, we cannot send a 2nd one
+        other = self.macd.macd[0] - self.macd.macd[-1]
+        before = self.macd.macd[-1] -self.macd.macd[-2]
+        macdbuy = (other>0 and before<0)
+        macdsell = (other<0 and before>0)
         if self.order:
             return
         
         # Check if we are in the market
         if not self.position:
             # Not yet ... we MIGHT BUY if ...
-            if self.buy_signal[0]:
+            if self.buy_signal[0] or macdbuy:
                 # Keep track of the created order to avoid a 2nd order
                 self.order = self.buy()
         else:
             # Already in the market ... we might sell
-            if self.sell_signal[0]:
+            if self.sell_signal[0] or macdsell:
                 # Keep track of the created order to avoid a 2nd order
                 self.order = self.sell()
 
