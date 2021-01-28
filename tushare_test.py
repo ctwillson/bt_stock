@@ -3,12 +3,13 @@ import pandas as pd
 import datetime
 import time
 import os
+import argparse
 
 now_time = pd.to_datetime(datetime.datetime.now())
 start_date = '20180501'
 end_date=str(now_time)[0:4]+str(now_time)[5:7]+str(now_time)[8:10]
 
-def get_stock_list(pro):
+def get_stock_list(pro,args):
     data = pro.stock_basic(exchange='', list_status='L', fields='ts_code,symbol,name,area,industry,list_date')
     if  data.empty:
         print('get stock list failed,return!')
@@ -16,18 +17,25 @@ def get_stock_list(pro):
     data.to_csv('./testdata/stocklist.csv')
     stock_list = data['ts_code']
     #stock_list.to_csv('stock_list.csv')
-    for ts_code in stock_list:
-        while True:
-            try:
-                df = pro.daily(ts_code=ts_code,start_date=start_date,end_date=end_date)
-                bt_df = preprocess(df,True)
-                bt_df.to_csv('./testdata/day/'+ts_code[0:6]+'.csv')
-                time.sleep(0.1)
-            except:
-                print(ts_code + "failed")
-                time.sleep(2)
-                continue
-            break
+    if(args.stock_name is None):
+        print('none')
+        for ts_code in stock_list:
+            while True:
+                try:
+                    df = ts.pro_bar(ts_code=ts_code, adj=args.adj, start_date=start_date,end_date=end_date)
+                    # df = pro.daily(ts_code=ts_code,start_date=start_date,end_date=end_date)
+                    bt_df = preprocess(df,True)
+                    bt_df.to_csv('./testdata/day/'+ts_code[0:6]+'.csv')
+                    time.sleep(0.1)
+                except:
+                    print(ts_code + "failed")
+                    time.sleep(2)
+                    continue
+                break
+    else:
+        df = ts.pro_bar(ts_code=args.stock_name, adj=args.adj, start_date=start_date,end_date=end_date)
+        bt_df = preprocess(df,True)
+        bt_df.to_csv('./testdata/day/'+args.stock_name[0:6]+'.csv')
 
 #转换tushare data 为 backtrader data
 def preprocess(df, pro=False):
@@ -48,13 +56,25 @@ def preprocess(df, pro=False):
         df.index = pd.DatetimeIndex(df.index)
     df = df[::-1]
     return df
+def parse_args(pargs=None):
+    parser = argparse.ArgumentParser(
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        )
+    parser.add_argument('-s','--stock_name', required=False,
+                        help='stock name eg:000001.SZ')
+
+    parser.add_argument('--adj', required=False, default='qfq',
+                        help='qfq hfq')
+    return parser.parse_args(pargs)
+
 if __name__ == '__main__':
+    args = parse_args()
     stock_list_file = 'huidingstock_list.csv'
     ts_token = os.getenv('TS_TOKEN')
     print('ts_token = ' + ts_token)
     ts.set_token(ts_token)
     pro = ts.pro_api()
-    get_stock_list(pro)
+    get_stock_list(pro,args)
     #df = pro.trade_cal(exchange='', start_date='20180901', end_date='20181001', fields='exchange,cal_date,is_open,pretrade_date', is_open='0')
     #df = pro.daily(ts_code='603160.SH',start_date='20200101',end_date='20200815')
     #df.to_csv(stock_list_file)
