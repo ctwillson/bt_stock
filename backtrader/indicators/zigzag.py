@@ -24,7 +24,7 @@ class ZigZag(PeriodN):
         last_pivot_t=dict(marker='', markersize=0.0, ls='', _plotskip=True),
         last_pivot_x=dict(marker='', markersize=0.0, ls='', _plotskip=True),
         last_pivot_ago=dict(marker='', markersize=0.0, ls='', _plotskip=True),
-        zigzag_peak=dict(marker='v', markersize=4.0, color='yellow',
+        zigzag_peak=dict(marker='v', markersize=4.0, color='blue',
                          fillstyle='full', ls=''),
         zigzag_valley=dict(marker='^', markersize=4.0, color='red',
                            fillstyle='full', ls=''),
@@ -35,9 +35,9 @@ class ZigZag(PeriodN):
     # update value to standard for Moving Averages
     params = (
         ('period', 2),
-        ('up_retrace', 0.1),
-        ('dn_retrace', 0.1),
-        ('bardist', 0.015),  # distance to max/min in absolute perc
+        ('up_retrace', 10),
+        ('dn_retrace', 10),
+        ('bardist', 0.05),  # distance to max/min in absolute perc
     )
 
     def __init__(self):
