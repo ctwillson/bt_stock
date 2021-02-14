@@ -18,7 +18,7 @@ class ZigzagStrategy(bt.Strategy):
         ('lastprice',0.0),
         ('stock_name',''),
         ('fakevalley',True),
-        ('printlog',False),
+        ('printlog',True),
         ('up_kline',False),
         ('maxcpus',12)
     )
@@ -73,6 +73,7 @@ class ZigzagStrategy(bt.Strategy):
         # zigzag_sell = (self.datalow[0] < self.p.valley) or (self.dataclose[0] > self.p.lastprice * 1.15)
         if(not math.isnan(self.zigzag.zigzag_valley[0])):
             self.p.valley = self.zigzag.zigzag_valley[0]
+            self.log('self.p.valley = %.4f' % self.zigzag.zigzag_valley[0])
             self.p.fakevalley = False
             updata = self.dataclose[0] if self.dataopen[0] > self.dataclose[0] else self.dataopen[0]
             # print('updata = %.2f' % updata)
@@ -83,7 +84,7 @@ class ZigzagStrategy(bt.Strategy):
 
         if(not math.isnan(self.zigzag.zigzag_peak[0])):
             self.p.peak = self.zigzag.zigzag_peak[0]
-            # print(self.zigzag.zigzag_peak[0])
+            self.log('self.p.peak = %.4f' % self.zigzag.zigzag_peak[0])
         if(self.datalow[0] < self.p.fakevalley):
             self.p.fakevalley = True
 
@@ -96,6 +97,7 @@ class ZigzagStrategy(bt.Strategy):
         if not self.position:
             # Not yet ... we MIGHT BUY if ...
             if zigzag_buy:
+                self.log('buy self.p.peak = %.2f self.datalow[0] = %.2f' % (self.p.valley,self.datalow[0]))
                 # Keep track of the created order to avoid a 2nd order
                 self.order = self.buy()
                 
@@ -128,6 +130,9 @@ def parse_args(pargs=None):
 
     parser.add_argument('--s', required=False, default='000001',
                         help='to test which stocks')
+
+    parser.add_argument('--mp', required=False, action='store_true',
+                        help='wheather use multiprocessing')
     return parser.parse_args(pargs)
 def all_stratepy(ts_code):
     print(ts_code[0:6])
@@ -144,7 +149,8 @@ def all_stratepy(ts_code):
         print('dataframe too short')
         return
     dataframe['openinterest'] = 0
-    data = bt.feeds.PandasData(dataname=dataframe)
+    data = bt.feeds.PandasData(dataname=dataframe,
+    fromdate=datetime.datetime(2018, 1, 1))
     cerebro = bt.Cerebro()
     cerebro.adddata(data,name = ts_code)
     cerebro.addstrategy(ZigzagStrategy,stock_name = ts_code)
@@ -182,9 +188,18 @@ def runstrat(args=None):
     if args.all:
         profitValue = 0
         lossValue = 0
-        # pool = multiprocessing.Pool(processes=6)
-        with multiprocessing.Pool() as pool:
-            for s in pool.imap_unordered(all_stratepy,stocklist['ts_code'],chunksize=10):
+        if(args.mp):
+            with multiprocessing.Pool() as pool:
+                for s in pool.imap_unordered(all_stratepy,stocklist['ts_code'],chunksize=10):
+                    logger.logerr(s)
+                    if(s is not None):
+                        if 'loss' in s:
+                            lossValue += 1
+                        else :
+                            profitValue += 1
+        else:
+            for ts_code in stocklist['ts_code']:
+                s = all_stratepy(ts_code)
                 logger.logerr(s)
                 if(s is not None):
                     if 'loss' in s:
@@ -194,7 +209,7 @@ def runstrat(args=None):
         logger.logerr('profit:' + str(profitValue) + ' loss:' + str(lossValue))
     else:
         if not args.s is None:
-            datapath = os.path.join(modpath, 'testdata/day/',args.s+'.csv')
+            datapath = os.path.join(modpath, 'testdata/xueqiu/',args.s+'.csv')
         else:
             datapath = os.path.join(modpath,'testdata/bt_csv_from_toshare.csv')
         print(datapath)
@@ -206,7 +221,10 @@ def runstrat(args=None):
             print('dataframe too short')
             sys.exit(0)
         dataframe['openinterest'] = 0
-        data = bt.feeds.PandasData(dataname=dataframe)
+        data = bt.feeds.PandasData(dataname=dataframe,
+            fromdate=datetime.datetime(2018, 1, 1),
+            # todate=datetime.datetime(2019, 12, 31),
+        )
         cerebro = bt.Cerebro()
         cerebro.adddata(data)
         cerebro.addstrategy(ZigzagStrategy)
