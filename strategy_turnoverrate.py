@@ -19,8 +19,11 @@ class PandasDataTurnover(bt.feeds.PandasData):
 class TurnoverStrategy(bt.Strategy):
     params = (
         ('printlog',True),
+        ('stock_name',''),
         ('bugsig',False),
         ('sellsig',False),
+        ('fastema',12),
+        ('slowema',26),
     )
     
     def log(self, txt, dt=None):
@@ -39,6 +42,13 @@ class TurnoverStrategy(bt.Strategy):
         # To keep track of pending orders
         self.order = None
         
+            # self.fastema = bt.ind.EMA(self.data.turnoverrate,period=self.p.fastema)
+            # self.slowema = bt.ind.EMA(self.data.turnoverrate,period=self.p.slowema)
+            # self.crossover = bt.indicators.CrossOver(self.fastema, self.slowema, plot=False)
+        self.buysig = False
+        self.sellsig = True
+        # self.buy_signal = self.crossover == 1
+        # self.sell_signal = self.crossover == -1
     # def prenext(self):
     #     print("prenext")
     def notify_order(self, order):
@@ -63,27 +73,29 @@ class TurnoverStrategy(bt.Strategy):
         self.order = None
 
     def next(self):
+        self.buysig = self.dataturnoverrate[0] > (2 * self.dataturnoverrate[-1])
         if self.order:
             return
         
         # Check if we are in the market
         if not self.position:
             # Not yet ... we MIGHT BUY if ...
-            if self.p.bugsig:
-                self.log('buy self.p.peak = %.2f self.datalow[0] = %.2f' % (self.p.valley,self.datalow[0]))
+            if self.buysig:
                 self.log('self.dataturnoverrate = %.2f' % self.dataturnoverrate[0])
                 # Keep track of the created order to avoid a 2nd order
                 self.order = self.buy()
-                
-                self.p.lastprice = self.dataclose[0]
+                self.sellsig = True
         else:
             # Already in the market ... we might sell
-            if self.p.sellsig:
+            if self.sellsig:
                 # Keep track of the created order to avoid a 2nd order
                 self.order = self.sell()
+                self.sellsig = False
 
     def stop(self):
-        self.log('stop')
+        with open('attention_turnover.txt','a') as f:
+            if(self.dataturnoverrate[0] > (2 * self.dataturnoverrate[-1])):
+                f.write(self.datas[0].datetime.date(0).isoformat() + ' ' + str(self.p.stock_name) + '\n')
 
 
 
@@ -139,8 +151,10 @@ def all_stratepy(ts_code):
     # lock.acquire()
     if(begincash > endcash):
         return (ts_code + ' loss!' + ' ' + str(round(endcash,2)))
-    else:
+    elif (begincash < endcash):
         return (ts_code + ' profit!' + ' ' + str(round(endcash,2)))
+    else:
+        return None
         # profitValue = profitValue +1
         # logger.logerr(ts_code[0:6] + 'profit!')
     # lock.release()
