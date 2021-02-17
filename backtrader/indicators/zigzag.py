@@ -35,9 +35,9 @@ class ZigZag(PeriodN):
     # update value to standard for Moving Averages
     params = (
         ('period', 2),
-        ('up_retrace', 10),
-        ('dn_retrace', 10),
-        ('bardist', 0.05),  # distance to max/min in absolute perc
+        ('up_retrace', 5),
+        ('dn_retrace', 5),
+        ('bardist', 0.00),  # distance to max/min in absolute perc
     )
 
     def __init__(self):
