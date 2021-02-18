@@ -81,8 +81,9 @@ class ZigZag(PeriodN):
         zigzag = self.lines.zigzag
         last_zigzag = self.lines.last_zigzag
 
-        x = data[0]
-        r = x / last_pivot_x[-1] - 1
+        # x = data[0]
+        r1 = data.low[0] / last_pivot_x[-1] - 1
+        r2 = data.high[0] / last_pivot_x[-1] - 1
         curr_idx = len(data) - 1
 
         trend[0] = trend[-1]
@@ -92,45 +93,45 @@ class ZigZag(PeriodN):
         zigzag_peak[0] = self.missing_val
         zigzag_valley[0] = self.missing_val
         zigzag[0] = self.missing_val
-        last_zigzag[0] = x
+        # last_zigzag[0] = x
 
         if trend[-1] == 0:
-            if r >= self.p.up_retrace:
+            if r2 >= self.p.up_retrace:
                 piv = last_pivot_x[0] * (1 - self.p.bardist)
                 zigzag_valley[-int(last_pivot_ago[0])] = piv
                 zigzag[-int(last_pivot_ago[0])] = last_pivot_x[0]
                 trend[0] = 1
-                last_pivot_x[0] = x
+                last_pivot_x[0] = data.high[0]
                 last_pivot_t[0] = curr_idx
-            elif r <= self.p.dn_retrace:
+            elif r1 <= self.p.dn_retrace:
                 piv = last_pivot_x[0] * (1 + self.p.bardist)
                 zigzag_peak[-int(last_pivot_ago[0])] = piv
                 zigzag[-int(last_pivot_ago[0])] = last_pivot_x[0]
                 trend[0] = -1
-                last_pivot_x[0] = x
+                last_pivot_x[0] = data.low[0]
                 last_pivot_t[0] = curr_idx
         elif trend[-1] == -1:
-            if r >= self.p.up_retrace:
+            if r2 >= self.p.up_retrace:
                 piv = last_pivot_x[0] * (1 - self.p.bardist)
                 zigzag_valley[-int(last_pivot_ago[0])] = piv
                 zigzag[-int(last_pivot_ago[0])] = last_pivot_x[0]
                 trend[0] = 1
-                last_pivot_x[0] = x
+                last_pivot_x[0] = data.high[0]
                 last_pivot_t[0] = curr_idx
-            elif x < last_pivot_x[-1]:
-                last_pivot_x[0] = x
+            elif data.low[0] < last_pivot_x[-1]:
+                last_pivot_x[0] = data.low[0]
                 last_pivot_t[0] = curr_idx
         elif trend[-1] == 1:
-            if r <= self.p.dn_retrace:
+            if r1 <= self.p.dn_retrace:
                 piv = last_pivot_x[0] * (1 + self.p.bardist)
                 zigzag_peak[-int(last_pivot_ago[0])] = piv
                 zigzag[-int(last_pivot_ago[0])] = last_pivot_x[0]
                 trend[0] = -1
-                last_pivot_x[0] = x
+                last_pivot_x[0] = data.low[0]
                 last_pivot_t[0] = curr_idx
-            elif x > last_pivot_x[-1]:
+            elif data.high[0] > last_pivot_x[-1]:
                 last_pivot_t[0] = curr_idx
-                last_pivot_x[0] = x
+                last_pivot_x[0] = data.high[0]
 
         idx = 1
         while idx < len(self.zigzag) and math.isnan(zigzag[-idx]):

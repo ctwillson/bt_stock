@@ -41,7 +41,7 @@ class ZigzagStrategy(bt.Strategy):
         self.dataclose = self.data0.close
         self.dataopen = self.data0.open
 
-        self.zigzag = bt.ind.ZigZag(self.data.low, plotname='ZZ')
+        self.zigzag = bt.ind.ZigZag(self.data, plotname='ZZ')
         self.zigzag_buy = False
         self.zigzag_sell = False
 
