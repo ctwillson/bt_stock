@@ -35,9 +35,10 @@ class ZigZag(PeriodN):
     # update value to standard for Moving Averages
     params = (
         ('period', 2),
-        ('up_retrace', 5),
-        ('dn_retrace', 5),
+        ('up_retrace', 8),
+        ('dn_retrace', 8),
         ('bardist', 0.00),  # distance to max/min in absolute perc
+        ('datalen',0),
     )
 
     def __init__(self):
@@ -93,7 +94,7 @@ class ZigZag(PeriodN):
         zigzag_peak[0] = self.missing_val
         zigzag_valley[0] = self.missing_val
         zigzag[0] = self.missing_val
-        # last_zigzag[0] = x
+        last_zigzag[0] = data.close[0]
 
         if trend[-1] == 0:
             if r2 >= self.p.up_retrace:
@@ -121,6 +122,10 @@ class ZigZag(PeriodN):
             elif data.low[0] < last_pivot_x[-1]:
                 last_pivot_x[0] = data.low[0]
                 last_pivot_t[0] = curr_idx
+            else:
+                if(len(self) == self.p.datalen):
+                    zigzag[-int(last_pivot_ago[0])] = last_pivot_x[0]
+                    last_zigzag[0] = data.high[0]
         elif trend[-1] == 1:
             if r1 <= self.p.dn_retrace:
                 piv = last_pivot_x[0] * (1 + self.p.bardist)
@@ -132,6 +137,10 @@ class ZigZag(PeriodN):
             elif data.high[0] > last_pivot_x[-1]:
                 last_pivot_t[0] = curr_idx
                 last_pivot_x[0] = data.high[0]
+            else:
+                if(len(self) == self.p.datalen):
+                    zigzag[-int(last_pivot_ago[0])] = last_pivot_x[0]
+                    last_zigzag[0] = data.low[0]
 
         idx = 1
         while idx < len(self.zigzag) and math.isnan(zigzag[-idx]):
