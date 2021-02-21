@@ -79,6 +79,9 @@ class ZigzagStrategy(bt.Strategy):
         # print('self.p.valley * 0.97 = %.4f ' % float(self.p.valley) * 0.97)
         # zigzag_buy = (self.datalow[0] < self.p.valley * 1.03)  and (self.datalow[0] > self.p.valley) and self.p.up_kline
         # zigzag_sell = (self.datalow[0] < self.p.valley) or (self.dataclose[0] > self.p.lastprice * 1.15)
+        if((self.p.peak_index) and (self.p.valley_index)):
+            self.zigzag_buy = (self.datalow[0] < self.p.valley * 1.03) and (self.datalow[0] > self.p.valley) and self.p.up_kline and ((self.p.peak_index - self.p.valley_index)>0)
+            self.zigzag_sell = (self.datalow[0] < self.p.valley) or (self.dataclose[0] > self.p.lastprice * 1.15) or self.p.forcesell
         if(not math.isnan(self.zigzag.zigzag_valley[0])):
             self.p.buylenth = len(self)
             self.p.valley = self.zigzag.zigzag_valley[0]
@@ -102,10 +105,10 @@ class ZigzagStrategy(bt.Strategy):
         if(self.datalow[0] < self.p.fakevalley):
             self.p.fakevalley = True
 
-        if((self.p.peak_index) and (self.p.valley_index)):
+        # if((self.p.peak_index) and (self.p.valley_index)):
 
-            self.zigzag_buy = (self.datalow[0] < self.p.valley * 1.03) and (self.datalow[0] > self.p.valley) and self.p.up_kline and ((self.p.peak_index - self.p.valley_index)>0)
-            self.zigzag_sell = (self.datalow[0] < self.p.valley) or (self.dataclose[0] > self.p.lastprice * 1.15) or self.p.forcesell
+        #     self.zigzag_buy = (self.datalow[0] < self.p.valley * 1.03) and (self.datalow[0] > self.p.valley) and self.p.up_kline and ((self.p.peak_index - self.p.valley_index)>0)
+        #     self.zigzag_sell = (self.datalow[0] < self.p.valley) or (self.dataclose[0] > self.p.lastprice * 1.15) or self.p.forcesell
         if self.order:
             return
         
@@ -126,7 +129,7 @@ class ZigzagStrategy(bt.Strategy):
                 self.p.forcesell = False
 
     def stop(self):
-        if ((self.datalow[0] < self.p.valley * 1.03)  and (self.datalow[0] > self.p.valley) and (not self.p.fakevalley)):
+        if ((self.datalow[0] < self.p.valley * 1.02)  and (self.datalow[0] > self.p.valley) and (not self.p.fakevalley)):
             with open('attention.txt','a') as f:
                 if(self.p.up_kline):
                     f.write(self.datas[0].datetime.date(0).isoformat() + ' ' + str(self.p.stock_name) + '\n')
