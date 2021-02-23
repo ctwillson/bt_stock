@@ -83,7 +83,7 @@ class ZigZag(PeriodN):
         last_zigzag = self.lines.last_zigzag
 
         # x = data[0]
-        r1 = data.low[0] / last_pivot_x[-1] - 1
+        r1 = 1 - last_pivot_x[-1] / data.low[0]
         r2 = data.high[0] / last_pivot_x[-1] - 1
         curr_idx = len(data) - 1
 
@@ -124,10 +124,12 @@ class ZigZag(PeriodN):
                 last_pivot_t[0] = curr_idx
             else:
                 if(len(self) == self.p.datalen):
+                    print('last zigzag')
+                    zigzag_valley[-int(last_pivot_ago[0])] = last_pivot_x[0]
                     zigzag[-int(last_pivot_ago[0])] = last_pivot_x[0]
                     last_zigzag[0] = data.high[0]
-        elif trend[-1] == 1 and int(last_pivot_ago[0]) >= 2:
-            if r1 <= self.p.dn_retrace:
+        elif trend[-1] == 1:
+            if r1 <= self.p.dn_retrace and int(last_pivot_ago[0]) >= 2:
                 piv = last_pivot_x[0] * (1 + self.p.bardist)
                 zigzag_peak[-int(last_pivot_ago[0])] = piv
                 zigzag[-int(last_pivot_ago[0])] = last_pivot_x[0]
@@ -139,6 +141,8 @@ class ZigZag(PeriodN):
                 last_pivot_x[0] = data.high[0]
             else:
                 if(len(self) == self.p.datalen):
+                    print('last zigzag')
+                    zigzag_peak[-int(last_pivot_ago[0])] = last_pivot_x[0]
                     zigzag[-int(last_pivot_ago[0])] = last_pivot_x[0]
                     last_zigzag[0] = data.low[0]
 
