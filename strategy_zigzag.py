@@ -1,3 +1,4 @@
+from backtrader.feed import DataClone
 from backtrader.feeds.pandafeed import PandasData
 import backtrader as bt
 import datetime
@@ -8,7 +9,7 @@ import sys  # To find out the script name (in argv[0])
 import argparse
 import bt_common
 import math
-import multiprocessing
+import csv
 
 modpath = os.path.dirname(os.path.abspath(sys.argv[0]))
 datapath = os.path.join(modpath, 'testdata/stocklist.csv')
@@ -23,7 +24,7 @@ class ZigzagStrategy(bt.Strategy):
         ('datalen',0),
         ('fakevalley',True),
         ('printlog',False),
-        ('up_kline',False),
+        # ('up_kline',False),
         ('maxcpus',12),
         ('buylenth',0),
         ('forcesell',False)
@@ -44,6 +45,10 @@ class ZigzagStrategy(bt.Strategy):
         self.zigzag = bt.ind.ZigZag(self.data, plotname='ZZ',datalen = self.p.datalen)
         self.zigzag_buy = False
         self.zigzag_sell = False
+
+        self.zigzagvalley_list = []
+        self.up_kline = []
+        self.today_upkline = False
 
         # To keep track of pending orders
         self.order = None
@@ -79,21 +84,29 @@ class ZigzagStrategy(bt.Strategy):
         # print('self.p.valley * 0.97 = %.4f ' % float(self.p.valley) * 0.97)
         # zigzag_buy = (self.datalow[0] < self.p.valley * 1.03)  and (self.datalow[0] > self.p.valley) and self.p.up_kline
         # zigzag_sell = (self.datalow[0] < self.p.valley) or (self.dataclose[0] > self.p.lastprice * 1.15)
+        updata = self.dataclose[0] if self.dataopen[0] > self.dataclose[0] else self.dataopen[0]
+        # print('updata = %.2f' % updata)
+        if ((updata - self.datalow[0])/self.datalow[0]) > 0.02:
+            self.today_upkline = True
+        else:
+            self.today_upkline = False
         if((self.p.peak_index) and (self.p.valley_index)):
-            self.zigzag_buy = (self.datalow[0] < self.p.valley * 1.03) and (self.datalow[0] > self.p.valley) and self.p.up_kline and ((self.p.peak_index - self.p.valley_index)>0)
+            self.zigzag_buy = abs(self.datalow[0] - self.p.valley) <= 0.05 and 15>=(len(self)-self.p.valley_index)>=2 and (not self.p.fakevalley)
+            # self.zigzag_buy = (self.datalow[0] < self.p.valley * 1.03) and (self.datalow[0] > self.p.valley) and self.up_kline[-1] and ((self.p.peak_index - self.p.valley_index)>0)
             self.zigzag_sell = (self.datalow[0] < self.p.valley) or (self.dataclose[0] > self.p.lastprice * 1.15) or self.p.forcesell
         if(not math.isnan(self.zigzag.zigzag_valley[0])):
             self.p.buylenth = len(self)
             self.p.valley = self.zigzag.zigzag_valley[0]
             self.log('self.p.valley = %.4f' % self.zigzag.zigzag_valley[0])
+            self.zigzagvalley_list.append(self.zigzag.zigzag_valley[0])
             self.p.fakevalley = False
             updata = self.dataclose[0] if self.dataopen[0] > self.dataclose[0] else self.dataopen[0]
             self.p.valley_index = len(self)
             # print('updata = %.2f' % updata)
-            if ((updata - self.datalow[0])/self.datalow[0]) > 0.02:
-                self.p.up_kline = True
+            if ((updata - self.datalow[0])/self.datalow[0]) > 0.015:
+                self.up_kline.append(True)
             else:
-                self.p.up_kline = False
+                self.up_kline.append(False)
             
             if (self.position):
                 self.p.forcesell = True
@@ -102,7 +115,7 @@ class ZigzagStrategy(bt.Strategy):
             self.p.peak = self.zigzag.zigzag_peak[0]
             self.p.peak_index = len(self)
             self.log('self.p.peak = %.4f' % self.zigzag.zigzag_peak[0])
-        if(self.datalow[0] < self.p.fakevalley):
+        if(self.datalow[0] < self.p.valley):
             self.p.fakevalley = True
 
         # if((self.p.peak_index) and (self.p.valley_index)):
@@ -129,10 +142,17 @@ class ZigzagStrategy(bt.Strategy):
                 self.p.forcesell = False
 
     def stop(self):
-        if ((self.datalow[0] < self.p.valley * 1.02)  and (self.datalow[0] > self.p.valley) and (not self.p.fakevalley)):
-            with open('attention.txt','a') as f:
-                if(self.p.up_kline):
-                    f.write(self.datas[0].datetime.date(0).isoformat() + ' ' + str(self.p.stock_name) + '\n')
+        if (len(self.zigzagvalley_list) >= 3):
+            if ((self.datalow[0] < self.p.valley * 1.03)  and (self.datalow[0] > self.p.valley) and (not self.p.fakevalley)) or (abs(self.zigzagvalley_list[-1] - self.zigzagvalley_list[-2])<0.05 and 0<(self.dataclose[0] - self.zigzagvalley_list[-1])/self.zigzagvalley_list[-1] < 0.03):
+                with open('./mylogs/attention/zg_0302.csv', "a", newline='') as file:
+                    csv_file = csv.writer(file)
+                    datas = [[str(self.p.stock_name),self.p.valley]]
+                    csv_file.writerows(datas)
+            # if ((abs(self.datalow[0] - self.p.valley) < 0.05)  and (self.datalow[0] > self.p.valley) and (not self.p.fakevalley)) or (abs(self.zigzagvalley_list[-1] - self.zigzagvalley_list[-2])<0.05 and 0<(self.dataclose[0] - self.zigzagvalley_list[-1])/self.zigzagvalley_list[-1] < 0.03):
+
+                # with open('attention.txt','a') as f:
+                #     if(self.up_kline[-1] or (self.today_upkline) or self.up_kline[-2]):
+                #         f.write(self.datas[0].datetime.date(0).isoformat() + ' ' + str(self.p.stock_name) + '\n')
 
 
 
@@ -160,6 +180,8 @@ def runstrat(args=None):
     logger = bt_common.MyLog(__name__,__file__)
     logger.instance()
     modpath = os.path.dirname(os.path.abspath(sys.argv[0]))
+    # df = pd.DataFrame(columns=['ts_code','last_zizag'])
+    # df.to_csv('./mylogs/attention/zg_0302.csv')
     mydatafeed = bt_common.MyDatafeed(datacls=PandasData,strategycls=ZigzagStrategy,args=args,logger=logger,modpath=modpath)
     mydatafeed.run()
 

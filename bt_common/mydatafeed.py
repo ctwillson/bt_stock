@@ -17,7 +17,8 @@ class MyDatafeed(object):
         self.modpath = modpath
     def _all_stratepy(self,ts_code):
         print(ts_code[0:6])
-        mydatapath = os.path.join(self.modpath, 'testdata/xueqiu/'+ts_code[0:6]+'.csv')
+        # mydatapath = os.path.join(self.modpath, 'testdata/xueqiu/day/xueqiu/'+ts_code[0:6]+'.csv')
+        mydatapath = os.path.join(self.modpath, 'testdata/day/'+ts_code[0:6]+'.csv')
         if not os.path.exists(mydatapath) :
             print(mydatapath + ' not exists,continue!!!')
             return
@@ -30,7 +31,8 @@ class MyDatafeed(object):
             return
         dataframe['openinterest'] = 0
         data = self.datacls(dataname=dataframe,
-            fromdate=datetime.datetime(2018, 1, 1))
+            fromdate=datetime.datetime(2018, 1, 1),
+            )
         cerebro = bt.Cerebro()
         cerebro.adddata(data,name = ts_code)
         cerebro.addstrategy(self.strategycls,stock_name = ts_code,datalen=dataframe.loc['2018-01-01':].shape[0])
@@ -87,7 +89,7 @@ class MyDatafeed(object):
             self.logger.logerr('profit:' + str(profitValue) + ' loss:' + str(lossValue))
         else:
             if not self.args.s is None:
-                datapath = os.path.join(self.modpath, 'testdata/xueqiu/',self.args.s+'.csv')
+                datapath = os.path.join(self.modpath, 'testdata/day/',self.args.s+'.csv')
             else:
                 datapath = os.path.join(self.modpath,'testdata/bt_csv_from_toshare.csv')
             print(datapath)
@@ -105,7 +107,7 @@ class MyDatafeed(object):
             )
             cerebro = bt.Cerebro()
             cerebro.adddata(data)
-            cerebro.addstrategy(self.strategycls,datalen=dataframe.loc['2018-01-01':].shape[0])
+            cerebro.addstrategy(self.strategycls,stock_name = self.args.s,datalen=dataframe.loc['2018-01-01':].shape[0])
             cerebro.broker.setcash(100000.0)
             # cerebro.broker.setcommission(0.0005)
             cerebro.broker.set_coc(True)
