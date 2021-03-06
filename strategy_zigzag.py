@@ -143,16 +143,17 @@ class ZigzagStrategy(bt.Strategy):
 
     def stop(self):
         if (len(self.zigzagvalley_list) >= 3):
+            # TODO: need optimize
             if ((self.datalow[0] < self.p.valley * 1.03)  and (self.datalow[0] > self.p.valley) and (not self.p.fakevalley)) or (abs(self.zigzagvalley_list[-1] - self.zigzagvalley_list[-2])<0.05 and 0<(self.dataclose[0] - self.zigzagvalley_list[-1])/self.zigzagvalley_list[-1] < 0.03):
                 with open(modpath + '/mylogs/attention/zg.csv', "a", newline='') as file:
                     csv_file = csv.writer(file)
                     datas = [[self.datas[0].datetime.date(0),str(self.p.stock_name),self.p.valley]]
                     csv_file.writerows(datas)
-            # if ((abs(self.datalow[0] - self.p.valley) <= 0.05)  and (self.datalow[0] > self.p.valley) and (not self.p.fakevalley)) or (abs(self.zigzagvalley_list[-1] - self.zigzagvalley_list[-2])<0.05 and 0<(self.dataclose[0] - self.zigzagvalley_list[-1])/self.zigzagvalley_list[-1] < 0.03):
+            if ((abs(self.datalow[0] - self.p.valley) <= 0.05)  and (self.datalow[0] > self.p.valley) and (not self.p.fakevalley)) or (abs(self.zigzagvalley_list[-1] - self.zigzagvalley_list[-2])<0.05 and 0<(self.dataclose[0] - self.zigzagvalley_list[-1])/self.zigzagvalley_list[-1] < 0.03):
 
-            #     with open('attention.txt','a') as f:
-            #         if(self.up_kline[-1] or (self.today_upkline) or self.up_kline[-2]):
-            #             f.write(self.datas[0].datetime.date(0).isoformat() + ' ' + str(self.p.stock_name) + '\n')
+                with open('attention.txt','a') as f:
+                    if(self.up_kline[-1] or (self.today_upkline) or self.up_kline[-2]):
+                        f.write(self.datas[0].datetime.date(0).isoformat() + ' ' + str(self.p.stock_name) + '\n')
 
 
 
