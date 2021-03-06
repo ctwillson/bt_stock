@@ -144,9 +144,9 @@ class ZigzagStrategy(bt.Strategy):
     def stop(self):
         if (len(self.zigzagvalley_list) >= 3):
             if ((self.datalow[0] < self.p.valley * 1.03)  and (self.datalow[0] > self.p.valley) and (not self.p.fakevalley)) or (abs(self.zigzagvalley_list[-1] - self.zigzagvalley_list[-2])<0.05 and 0<(self.dataclose[0] - self.zigzagvalley_list[-1])/self.zigzagvalley_list[-1] < 0.03):
-                with open('./mylogs/attention/zg.csv', "a", newline='') as file:
+                with open(modpath + '/mylogs/attention/zg.csv', "a", newline='') as file:
                     csv_file = csv.writer(file)
-                    datas = [[str(self.p.stock_name),self.p.valley]]
+                    datas = [[self.datas[0].datetime.date(0),str(self.p.stock_name),self.p.valley]]
                     csv_file.writerows(datas)
             # if ((abs(self.datalow[0] - self.p.valley) <= 0.05)  and (self.datalow[0] > self.p.valley) and (not self.p.fakevalley)) or (abs(self.zigzagvalley_list[-1] - self.zigzagvalley_list[-2])<0.05 and 0<(self.dataclose[0] - self.zigzagvalley_list[-1])/self.zigzagvalley_list[-1] < 0.03):
 
@@ -181,14 +181,14 @@ def runstrat(args=None):
     logger.instance()
     modpath = os.path.dirname(os.path.abspath(sys.argv[0]))
     # print(datetime.date.today())
-
     # df = pd.DataFrame(columns=['ts_code','last_zg'])
     # df.to_csv('./mylogs/attention/zg.csv',index=False)
-
-    with open('./mylogs/attention/zg.csv','w') as f:
-        csv_write = csv.writer(f)
-        csv_head = ['ts_code','last_zg']
-        csv_write.writerow(csv_head)
+    # print(modpath + '/mylogs/attention/zg.csv')
+    if(not os.path.exists(modpath + '/mylogs/attention/zg.csv')):
+        with open(modpath + './mylogs/attention/zg.csv','w') as f:
+            csv_write = csv.writer(f)
+            csv_head = ['datetime','ts_code','last_zg']
+            csv_write.writerow(csv_head)
     mydatafeed = bt_common.MyDatafeed(datacls=PandasData,strategycls=ZigzagStrategy,args=args,logger=logger,modpath=modpath)
     mydatafeed.run()
 
