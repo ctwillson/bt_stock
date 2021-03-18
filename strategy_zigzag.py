@@ -142,18 +142,24 @@ class ZigzagStrategy(bt.Strategy):
                 self.p.forcesell = False
 
     def stop(self):
-        if (len(self.zigzagvalley_list) >= 3):
+        if (len(self.zigzagvalley_list) >= 5):
             # TODO: need optimize
-            if ((self.datalow[0] < self.p.valley * 1.03)  and (self.datalow[0] > self.p.valley) and (not self.p.fakevalley)) or (abs(self.zigzagvalley_list[-1] - self.zigzagvalley_list[-2])<0.05 and 0<(self.dataclose[0] - self.zigzagvalley_list[-1])/self.zigzagvalley_list[-1] < 0.03):
+            if ((self.datalow[0] < self.p.valley * 1.06)  and (self.datalow[0] > self.p.valley * 1.02) and (self.datalow[0] > self.p.valley) and (abs(self.datalow[0] - self.p.valley) > 0.05) and (not self.p.fakevalley)) or (abs(self.zigzagvalley_list[-1] - self.zigzagvalley_list[-2])<0.05 and 0<(self.dataclose[0] - self.zigzagvalley_list[-1])/self.zigzagvalley_list[-1] < 0.03):
                 with open(modpath + '/mylogs/attention/zg.csv', "a", newline='') as file:
                     csv_file = csv.writer(file)
-                    datas = [[self.datas[0].datetime.date(0),str(self.p.stock_name),self.p.valley]]
+                    datas = [[self.datas[0].datetime.date(0),str(self.p.stock_name),self.p.valley,True,True,True]]
                     csv_file.writerows(datas)
-            if ((abs(self.datalow[0] - self.p.valley) <= 0.05)  and (self.datalow[0] > self.p.valley) and (not self.p.fakevalley)) or (abs(self.zigzagvalley_list[-1] - self.zigzagvalley_list[-2])<0.05 and 0<(self.dataclose[0] - self.zigzagvalley_list[-1])/self.zigzagvalley_list[-1] < 0.03):
+            if ((abs(self.datalow[0] - self.p.valley) <= 0.05)  and (self.datalow[0] > self.p.valley) and (not self.p.fakevalley)):
 
-                with open('attention.txt','a') as f:
+                with open(modpath + '/mylogs/attention/attention.txt','a') as f:
                     if(self.up_kline[-1] or (self.today_upkline) or self.up_kline[-2]):
                         f.write(self.datas[0].datetime.date(0).isoformat() + ' ' + str(self.p.stock_name) + '\n')
+            for zgval in self.zigzagvalley_list[-5:-1]:
+                if(zgval <= self.datalow[0] and abs(self.datalow[0] - zgval) <= 0.01):
+                    with open(modpath + '/mylogs/attention/attention_add.txt','a') as f:
+                        f.write(self.datas[0].datetime.date(0).isoformat() + ' ' + str(self.p.stock_name) + '\n')
+            # if((abs(self.zigzagvalley_list[-1] - self.zigzagvalley_list[-2])<0.05 and 0<(self.dataclose[0] - self.zigzagvalley_list[-1])/self.zigzagvalley_list[-1] < 0.03)):
+
 
 
 
@@ -186,9 +192,9 @@ def runstrat(args=None):
     # df.to_csv('./mylogs/attention/zg.csv',index=False)
     # print(modpath + '/mylogs/attention/zg.csv')
     if(not os.path.exists(modpath + '/mylogs/attention/zg.csv')):
-        with open(modpath + './mylogs/attention/zg.csv','w') as f:
+        with open(modpath + '/mylogs/attention/zg.csv','w') as f:
             csv_write = csv.writer(f)
-            csv_head = ['datetime','ts_code','last_zg']
+            csv_head = ['datetime','ts_code','last_zg','notify','down_notify','up_notify']
             csv_write.writerow(csv_head)
     mydatafeed = bt_common.MyDatafeed(datacls=PandasData,strategycls=ZigzagStrategy,args=args,logger=logger,modpath=modpath)
     mydatafeed.run()
