@@ -91,7 +91,10 @@ class ZigzagStrategy(bt.Strategy):
         else:
             self.today_upkline = False
         if((self.p.peak_index) and (self.p.valley_index)):
-            self.zigzag_buy = abs(self.datalow[0] - self.p.valley) <= 0.05 and 15>=(len(self)-self.p.valley_index)>=2 and (not self.p.fakevalley)
+            if(self.datalow[0] >= 15):
+                self.zigzag_buy = 0 <= (self.datalow[0] - self.p.valley)/self.datalow[0] <= 0.02 and 15>=(len(self)-self.p.valley_index)>=2 and (not self.p.fakevalley)
+            else:
+                self.zigzag_buy = abs(self.datalow[0] - self.p.valley) <= 0.05 and 15>=(len(self)-self.p.valley_index)>=2 and (not self.p.fakevalley)
             # self.zigzag_buy = (self.datalow[0] < self.p.valley * 1.03) and (self.datalow[0] > self.p.valley) and self.up_kline[-1] and ((self.p.peak_index - self.p.valley_index)>0)
             self.zigzag_sell = (self.datalow[0] < self.p.valley) or (self.dataclose[0] > self.p.lastprice * 1.15) or self.p.forcesell
         if(not math.isnan(self.zigzag.zigzag_valley[0])):
@@ -142,29 +145,42 @@ class ZigzagStrategy(bt.Strategy):
                 self.p.forcesell = False
 
     def stop(self):
-        if (len(self.zigzagvalley_list) >= 5):
+        if (len(self.zigzagvalley_list) >= 10):
             # TODO: need optimize
-            if ((self.datalow[0] < self.p.valley * 1.04) and (self.datalow[0] > self.p.valley) and (abs(self.datalow[0] - self.p.valley) > 0.05) and (not self.p.fakevalley)) or (abs(self.zigzagvalley_list[-1] - self.zigzagvalley_list[-2])<0.05 and 0<(self.dataclose[0] - self.zigzagvalley_list[-1])/self.zigzagvalley_list[-1] < 0.03):
-                with open(modpath + '/mylogs/attention/zg.csv', "a", newline='') as file:
-                    csv_file = csv.writer(file)
-                    datas = [[self.datas[0].datetime.date(0),str(self.p.stock_name),self.p.valley,True,True,True]]
-                    csv_file.writerows(datas)
+            # if ((self.datalow[0] < self.p.valley * 1.04) and (self.datalow[0] > self.p.valley) and (abs(self.datalow[0] - self.p.valley) > 0.05) and (not self.p.fakevalley)) or (abs(self.zigzagvalley_list[-1] - self.zigzagvalley_list[-2])<0.05 and 0<(self.dataclose[0] - self.zigzagvalley_list[-1])/self.zigzagvalley_list[-1] < 0.03):
+            #     with open(modpath + '/mylogs/attention/zg.csv', "a", newline='') as file:
+            #         csv_file = csv.writer(file)
+            #         datas = [[self.datas[0].datetime.date(0),str(self.p.stock_name),self.p.valley,True,True,True]]
+            #         csv_file.writerows(datas)
             if ((abs(self.datalow[0] - self.p.valley) <= 0.05)  and (self.datalow[0] >= self.p.valley) and (not self.p.fakevalley)):
 
                 with open(modpath + '/mylogs/attention/attention.txt','a') as f:
                     if(self.up_kline[-1] or (self.today_upkline) or self.up_kline[-2]):
                         f.write(self.datas[0].datetime.date(0).isoformat() + ' ' + str(self.p.stock_name) + '\n')
-            for index,zgval in enumerate(self.zigzagvalley_list[-5:-1]):
-                if(zgval <= self.datalow[0] and abs(self.datalow[0] - zgval) <= 0.05):
-                    m_zg = True
-                    now_zg = self.zigzagvalley_list[-5+index:]
-                    for data in now_zg:
-                        if(data < zgval):
-                            m_zg = False
-                    if(m_zg):
-                        with open(modpath + '/mylogs/attention/attention_add.txt','a') as f:
-                            f.write(self.datas[0].datetime.date(0).isoformat() + ' ' + str(self.p.stock_name) + '\n')
-                            break
+            if(self.datalow[0] >= 15):
+                for index,zgval in enumerate(self.zigzagvalley_list[-10:-1]):
+                        if(zgval <= self.datalow[0] and (self.datalow[0] - zgval)/self.datalow[0] <= 0.02):
+                            m_zg = True
+                            now_zg = self.zigzagvalley_list[-10+index:]
+                            for data in now_zg:
+                                if(data < zgval):
+                                    m_zg = False
+                            if(m_zg):
+                                with open(modpath + '/mylogs/attention/attention_add_15.txt','a') as f:
+                                    f.write(self.datas[0].datetime.date(0).isoformat() + ' ' + str(self.p.stock_name) + '\n')
+                                    break
+            else:
+                for index,zgval in enumerate(self.zigzagvalley_list[-10:-1]):
+                        if(zgval <= self.datalow[0] and (self.datalow[0] - zgval) <= 0.05):
+                            m_zg = True
+                            now_zg = self.zigzagvalley_list[-10+index:]
+                            for data in now_zg:
+                                if(data < zgval):
+                                    m_zg = False
+                            if(m_zg):
+                                with open(modpath + '/mylogs/attention/attention_add_0.txt','a') as f:
+                                    f.write(self.datas[0].datetime.date(0).isoformat() + ' ' + str(self.p.stock_name) + '\n')
+                                    break
             # if((abs(self.zigzagvalley_list[-1] - self.zigzagvalley_list[-2])<0.05 and 0<(self.dataclose[0] - self.zigzagvalley_list[-1])/self.zigzagvalley_list[-1] < 0.03)):
 
 
