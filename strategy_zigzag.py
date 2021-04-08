@@ -92,9 +92,9 @@ class ZigzagStrategy(bt.Strategy):
             self.today_upkline = False
         if((self.p.peak_index) and (self.p.valley_index)):
             if(self.datalow[0] >= 15):
-                self.zigzag_buy = 0 <= (self.datalow[0] - self.p.valley)/self.datalow[0] <= 0.02 and 15>=(len(self)-self.p.valley_index)>=2 and (not self.p.fakevalley)
+                self.zigzag_buy = 0 <= (self.datalow[0] - self.p.valley)/self.datalow[0] <= 0.02 and 15>=(len(self)-self.p.valley_index)>=2 and (not self.p.fakevalley) and (self.p.peak_index > self.p.valley_index)
             else:
-                self.zigzag_buy = abs(self.datalow[0] - self.p.valley) <= 0.05 and 15>=(len(self)-self.p.valley_index)>=2 and (not self.p.fakevalley)
+                self.zigzag_buy = abs(self.datalow[0] - self.p.valley) <= 0.05 and 15>=(len(self)-self.p.valley_index)>=2 and (not self.p.fakevalley) and (self.p.peak_index > self.p.valley_index)
             # self.zigzag_buy = (self.datalow[0] < self.p.valley * 1.03) and (self.datalow[0] > self.p.valley) and self.up_kline[-1] and ((self.p.peak_index - self.p.valley_index)>0)
             self.zigzag_sell = (self.datalow[0] < self.p.valley) or (self.dataclose[0] > self.p.lastprice * 1.15) or self.p.forcesell
         if(not math.isnan(self.zigzag.zigzag_valley[0])):
